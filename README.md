@@ -1,30 +1,21 @@
-# JarvisV3
-JarvisV3 is a Streamlit-powered AI assistant inspired by Iron Man’s Jarvis. It offers both text and realtime audio interactions using OpenAI’s API, with customizable settings including dynamic voice selection and optional function calling.
+# sofIA
+SofIA é uma assistente pessoal de IA criada usando Python que utiliza a API da OpenAI e consegue gerenciar e auxiliar no uso do computador.
 
-## Features
-
-- **Dual Interaction Modes:**  
-  Text chat and realtime audio streaming.
-- **Customizable Settings:**  
-  Update API keys, model, prompt, voice, and function calling options via an in-app settings tab.
-- **Dynamic Voice Selection:**  
-  Choose from voices: alloy, ash, ballad, coral, echo, sage, shimmer, and verse.
-
-## Prerequisites
+## Requisitos
 
 - Python 3.7+
-- An OpenAI API key
+- Chave de API da OpenAI
 
 ## Setup
 
-1. **Clone the Repository:**
+1. **Clone o repositório:**
 
    ```bash
-   git clone https://github.com/yourusername/JarvisV3.git
-   cd JarvisV3
+   git clone https://github.com/seunome/sofIA.git
+   cd sofIA
    ```
 
-2. **Create a Virtual Environment (optional but recommended):**
+2. **Crie um ambiente virtual (opcional, mas recomendado):**
 
    ```bash
    python -m venv venv
@@ -32,20 +23,20 @@ JarvisV3 is a Streamlit-powered AI assistant inspired by Iron Man’s Jarvis. It
    venv\Scripts\activate     # Windows
    ```
 
-3. **Install Dependencies:**
+3. **Instale as Dependências:**
 
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Create a `.env` File:**
+4. **Crie o seu `.env`:**
 
-   Create a file named `.env` in the root directory with the following content (replace placeholder values):
+   Crie um arquivo chamado `.env` no diretório raiz com (troque os valores de placeholder):
 
    ```ini
    OPENAI_API_KEY='your_api_key_here'
    OPENAI_MODEL='gpt-4o-mini-realtime-preview-2024-12-17'
-   INITIAL_PROMPT='You are an assistant named Jarvis...'
+   INITIAL_PROMPT='Você é uma assistente pessoal chamada sofIA...'
    DEVICE='windows'
    VAD='True'
    FUNCTION_CALLING='False'
@@ -54,18 +45,15 @@ JarvisV3 is a Streamlit-powered AI assistant inspired by Iron Man’s Jarvis. It
    INCLUDE_DATE='True'
    ```
 
-## Running the App
+## Rodando o App
 
-Start the Streamlit app with:
+Rode o app streamlit com:
 
 ```bash
 streamlit run app.py
 ```
 
-Open the displayed URL in your browser to interact with JarvisV3.
+Abra o URL mostrado no seu navegador.
 
-## License
 
-This project is licensed under the MIT License. Feel free to contribute!
-
-Enjoy using JarvisV3!
+Faça bom uso!
