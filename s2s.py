@@ -202,11 +202,84 @@ class JarvisClient:
                             self.ws.send(json.dumps(output_event))
                             response_create_event = {"type": "response.create"}
                             self.ws.send(json.dumps(response_create_event))
-                elif item.get("type") == "message":
-                    text = item.get("text", "")
-                    if text and self.on_text_response:
-                        print(f"DEBUG: Sending text from response.done: {text}")
-                        self.on_text_response(text)
+                    elif func_name == "create_file":
+                        file_path = args.get("file_path")
+                        content = args.get("content")
+                        if file_path and content is not None:  # Permitir conteúdo vazio
+                            from functions import create_file
+                            result = create_file(file_path, content)
+                            print(f"DEBUG: Resultado da função create_file: {result}")
+                            output_event = {
+                                "type": "conversation.item.create",
+                                "item": {
+                                    "type": "function_call_output",
+                                    "call_id": call_id,
+                                    "output": json.dumps({"result": result})
+                                }
+                            }
+                            self.ws.send(json.dumps(output_event))
+                            response_create_event = {"type": "response.create"}
+                            self.ws.send(json.dumps(response_create_event))
+                    # Handle open_application function
+                    elif func_name == "open_application":
+                        app_name = args.get("app_name")
+                        if app_name:
+                            from functions import open_application
+                            result = open_application(app_name)
+                            output_event = {
+                                "type": "conversation.item.create",
+                                "item": {
+                                    "type": "function_call_output",
+                                    "call_id": call_id,
+                                    "output": json.dumps({"result": result})
+                                }
+                            }
+                            self.ws.send(json.dumps(output_event))
+                            response_create_event = {"type": "response.create"}
+                            self.ws.send(json.dumps(response_create_event))
+                    
+                    # Handle get_top_processes function
+                    elif func_name == "get_top_processes":
+                        count = args.get("count", 5)
+                        from functions import get_top_processes
+                        result = get_top_processes(count)
+                        output_event = {
+                            "type": "conversation.item.create",
+                            "item": {
+                                "type": "function_call_output",
+                                "call_id": call_id,
+                                "output": json.dumps({"result": result})
+                            }
+                        }
+                        self.ws.send(json.dumps(output_event))
+                        response_create_event = {"type": "response.create"}
+                        self.ws.send(json.dumps(response_create_event))
+                    
+                    # Handle github_operations function
+                    elif func_name == "github_operations":
+                        operation = args.get("operation")
+                        repo_name = args.get("repo_name")
+                        description = args.get("description")
+                        local_path = args.get("local_path")
+                        if operation and repo_name:
+                            from functions import github_operations
+                            result = github_operations(operation, repo_name, description, local_path)
+                            output_event = {
+                                "type": "conversation.item.create",
+                                "item": {
+                                    "type": "function_call_output",
+                                    "call_id": call_id,
+                                    "output": json.dumps({"result": result})
+                                }
+                            }
+                            self.ws.send(json.dumps(output_event))
+                            response_create_event = {"type": "response.create"}
+                            self.ws.send(json.dumps(response_create_event))
+                    elif item.get("type") == "message":
+                        text = item.get("text", "")
+                        if text and self.on_text_response:
+                            print(f"DEBUG: Sending text from response.done: {text}")
+                            self.on_text_response(text)
         
         elif event_type == "response.output_item.done":
             item = event.get("item", {})
@@ -292,7 +365,83 @@ class JarvisClient:
                         },
                         "required": ["stl_file"]
                     }
-                }
+                },
+                {
+                    "type": "function",
+                    "name": "create_file",
+                    "description": "Create a file with the given content.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "file_path": {
+                                "type": "string",
+                                "description": "The path where the file should be created."
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "The content to write to the file."
+                            }
+                        },
+                        "required": ["file_path", "content"]
+                    }
+                },
+                {
+                    "type": "function",
+                    "name": "open_application",
+                    "description": "Find and open an application by name.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "app_name": {
+                                "type": "string",
+                                "description": "The name of the application to open."
+                            }
+                        },
+                        "required": ["app_name"]
+                    }
+                },
+                {
+                    "type": "function",
+                    "name": "get_top_processes",
+                    "description": "Get the top processes by CPU usage.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer",
+                                "description": "Number of processes to return (default: 5)."
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "name": "github_operations",
+                    "description": "Perform GitHub operations like creating, cloning or deleting repositories.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "operation": {
+                                "type": "string",
+                                "description": "The operation to perform: create, clone, or delete.",
+                                "enum": ["create", "clone", "delete"]
+                            },
+                            "repo_name": {
+                                "type": "string",
+                                "description": "The name of the repository."
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Description for the repository (only for create operation)."
+                            },
+                            "local_path": {
+                                "type": "string",
+                                "description": "Local path for clone or initialization (optional)."
+                            }
+                        },
+                        "required": ["operation", "repo_name"]
+                    }
+                },
             ]
             session_update["session"]["tool_choice"] = "auto"
         ws.send(json.dumps(session_update))

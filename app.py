@@ -7,14 +7,9 @@ from s2s import JarvisClient  # adjust the import based on your project structur
 # Load environment variables from .env
 load_dotenv()
 
-st.set_page_config(page_title="JarvisV3 Chatbot", layout="centered")
+st.set_page_config(page_title="SofIA", layout="centered")
 
-# Display the logo at the top of the app centered.
-logo_path = "./assets/logo.png"
-if os.path.exists(logo_path):
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.image(logo_path)
+
 
 # Load avatar image for chat messages.
 avatar_path = "./assets/full.png"
@@ -53,14 +48,13 @@ if "text_client" not in st.session_state or st.session_state.text_client is None
     )
     st.session_state.text_client.start_realtime()  # Start the WebSocket connection
 
-# Create three tabs: Chat, Realtime Audio, and Settings.
-tabs = st.tabs(["Chat", "Realtime", "Settings"])
+tabs = st.tabs(["Chat", "Realtime", "Configurações"])
 
 # --------------------- Chat Tab (tab[0]) ---------------------
 with tabs[0]:
-    st.title("💬 Chat with JarvisV3")
+    st.title("💬 Fale com a SofIA")
     
-    prompt = st.chat_input("Ask Jarvis...")
+    prompt = st.chat_input("Pergunte pra SofIA...")
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         # Synchronously send the text message and wait for a response.
@@ -78,9 +72,9 @@ with tabs[0]:
 
 # --------------------- Realtime Audio Tab (tab[1]) ---------------------
 with tabs[1]:
-    st.header("🎙️ Realtime Audio Chat")
+    st.header("🎙️ Conversa por áudio em tempo real")
     if "realtime_client" not in st.session_state or st.session_state.realtime_client is None:
-        if st.button("Start Realtime Audio Chat"):
+        if st.button("Iniciar Conversa"):
             st.session_state.realtime_client = JarvisClient(
                 api_key=st.session_state.settings["OPENAI_API_KEY"],
                 model=st.session_state.settings["OPENAI_MODEL"],
@@ -92,13 +86,13 @@ with tabs[1]:
                 voice=st.session_state.settings["VOICE"]
             )
             st.session_state.realtime_client.start_realtime()
-            st.success("Realtime audio chat started.")
+            st.success("Conversa Iniciada.")
             st.rerun()
     else:
-        if st.button("Stop Realtime Audio Chat"):
+        if st.button("Parar Conversa"):
             st.session_state.realtime_client.stop_realtime()
             st.session_state.realtime_client = None
-            st.success("Realtime audio chat stopped.")
+            st.success("Conversa finalizada.")
             st.rerun()
 
 # --------------------- Settings Tab (tab[2]) ---------------------
@@ -123,7 +117,7 @@ with tabs[2]:
         )
         include_date = st.checkbox("Include Date", value=st.session_state.settings["INCLUDE_DATE"])
         include_time = st.checkbox("Include Time", value=st.session_state.settings["INCLUDE_TIME"])
-        pc_username = st.text_input("PC Username", value=st.session_state.settings["PC_USERNAME"])
+        pc_username = "conta"
         submitted = st.form_submit_button("Save Settings")
         if submitted:
             st.session_state.settings["OPENAI_API_KEY"] = api_key
