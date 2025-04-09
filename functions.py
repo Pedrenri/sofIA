@@ -155,63 +155,154 @@ def create_file(file_path, content):
         
 def open_application(app_name):
     """
-    Find and open an application by name.
+    Encontra e abre um aplicativo pelo nome, usando várias estratégias para
+    localizar aplicativos no Windows.
     """
     try:
-        if os.name == 'nt':  # Windows
-            program_files = [
-                os.environ.get('ProgramFiles', 'C:\\Program Files'),
-                os.environ.get('ProgramFiles(x86)', 'C:\\Program Files (x86)'),
-                os.environ.get('LOCALAPPDATA', 'C:\\Users\\conta\\AppData\\Local')
-            ]
-            
-            common_apps = {
-                'chrome': 'start chrome',
-                'firefox': 'start firefox',
-                'edge': 'start msedge',
-                'word': 'start winword',
-                'excel': 'start excel',
-                'powerpoint': 'start powerpnt',
-                'notepad': 'start notepad',
-                'cmd': 'start cmd',
-                'explorer': 'start explorer',
-                'calculator': 'start calc'
-            }
-            
-            app_lower = app_name.lower()
-            if app_lower in common_apps:
-                subprocess.Popen(common_apps[app_lower], shell=True)
+        import os
+        import subprocess
+        import glob
+        
+        print(f"DEBUG: Tentando abrir aplicativo: {app_name}")
+
+        if (app_name.lower() == "bamboo" or app_name.lower() == "bamboo studio"):
+            app_name = app_name.replace("bamboo", "bambu")
+
+        print(f"DEBUG: Nome do aplicativo normalizado: {app_name}")
+        # Normaliza o nome do aplicativo
+        app_name_lower = app_name.lower()
+        
+        # 1. Verifica aplicativos comuns com comandos diretos
+        common_apps = {
+            'chrome': 'start chrome',
+            'google chrome': 'start chrome',
+            'firefox': 'start firefox',
+            'edge': 'start msedge',
+            'microsoft edge': 'start msedge',
+            'word': 'start winword',
+            'excel': 'start excel',
+            'powerpoint': 'start powerpnt',
+            'notepad': 'start notepad',
+            'bloco de notas': 'start notepad',
+            'cmd': 'start cmd',
+            'prompt de comando': 'start cmd',
+            'terminal': 'start cmd',
+            'explorer': 'start explorer',
+            'explorador de arquivos': 'start explorer',
+            'calculadora': 'start calc',
+            'calculator': 'start calc',
+            'paint': 'start mspaint',
+            'spotify': 'start spotify',
+            'discord': 'start discord',
+            'steam': 'start steam',
+            'visual studio code': 'start code',
+            'vscode': 'start code',
+            'vs code': 'start code',
+            'outlook': 'start outlook',
+            'teams': 'start teams',
+            'microsoft teams': 'start teams'
+        }
+        
+        # Verifica se é um app comum
+        for key, command in common_apps.items():
+            if app_name_lower == key or app_name_lower in key:
+                print(f"DEBUG: Executando comando direto: {command}")
+                subprocess.run(command, shell=True)
                 return f"Abrindo {app_name}"
-            
-            # Try to find the .exe file
-            for folder in program_files:
-                for root, dirs, files in os.walk(folder):
+        
+        # 2. Tenta encontrar no Menu Iniciar
+        start_menu_paths = [
+            os.path.join(os.environ.get('APPDATA', ''), r'Microsoft\Windows\Start Menu\Programs'),
+            os.path.join(os.environ.get('PROGRAMDATA', r'C:\ProgramData'), r'Microsoft\Windows\Start Menu\Programs')
+        ]
+        
+        for start_menu in start_menu_paths:
+            if os.path.exists(start_menu):
+                print(f"DEBUG: Procurando em {start_menu}")
+                # Procura por atalhos (.lnk) que contenham o nome do aplicativo
+                for root, dirs, files in os.walk(start_menu):
                     for file in files:
-                        if file.lower() == f"{app_lower}.exe" or app_lower in file.lower():
-                            path = os.path.join(root, file)
-                            subprocess.Popen(f'start "" "{path}"', shell=True)
-                            return f"Abrindo {file}"
-            
-            # If not found, try to run it directly
-            subprocess.Popen(f'start {app_name}', shell=True)
+                        if file.lower().endswith('.lnk'):
+                            if app_name_lower in file.lower():
+                                shortcut_path = os.path.join(root, file)
+                                print(f"DEBUG: Encontrado atalho: {shortcut_path}")
+                                os.startfile(shortcut_path)
+                                return f"Abrindo {file}"
+        
+        # 3. Tenta procurar nos diretórios de programas
+        program_dirs = [
+            os.environ.get('ProgramFiles', r'C:\Program Files'),
+            os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)'),
+            os.path.join(os.environ.get('LOCALAPPDATA', r'C:\Users'), os.environ.get("USERNAME", "conta"), r'AppData\Local')
+        ]
+        
+        for program_dir in program_dirs:
+            if os.path.exists(program_dir):
+                print(f"DEBUG: Procurando em {program_dir}")
+                # Procura por executáveis (.exe) que contenham o nome do aplicativo
+                exe_paths = []
+                for root, dirs, files in os.walk(program_dir):
+                    for file in files:
+                        if file.lower().endswith('.exe'):
+                            if app_name_lower in file.lower():
+                                exe_path = os.path.join(root, file)
+                                exe_paths.append(exe_path)
+                
+                # Se encontrou algum executável, abre o primeiro
+                if exe_paths:
+                    print(f"DEBUG: Encontrados {len(exe_paths)} executáveis")
+                    print(f"DEBUG: Abrindo {exe_paths[0]}")
+                    os.startfile(exe_paths[0])
+                    return f"Abrindo {os.path.basename(exe_paths[0])}"
+        
+        # 4. Tenta pesquisar no registro do Windows
+        try:
+            import winreg
+            print("DEBUG: Pesquisando no registro do Windows")
+            # Procura por aplicativos registrados
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths") as key:
+                for i in range(winreg.QueryInfoKey(key)[0]):
+                    try:
+                        app_key = winreg.EnumKey(key, i)
+                        if app_name_lower in app_key.lower():
+                            with winreg.OpenKey(key, app_key) as app_key_handle:
+                                app_path = winreg.QueryValue(app_key_handle, None)
+                                print(f"DEBUG: Encontrado no registro: {app_path}")
+                                os.startfile(app_path)
+                                return f"Abrindo {app_key}"
+                    except:
+                        continue
+        except Exception as reg_error:
+            print(f"DEBUG: Erro ao pesquisar no registro: {reg_error}")
+        
+        # 5. Última tentativa: executa diretamente como comando
+        print(f"DEBUG: Tentativa final: executar como comando")
+        try:
+            subprocess.run(f'start {app_name}', shell=True, check=True)
             return f"Tentando abrir {app_name}"
-        else:
-            # For non-Windows systems
-            subprocess.Popen(app_name, shell=True)
-            return f"Abrindo {app_name}"
+        except subprocess.CalledProcessError:
+            # Se falhar, tenta com o comando "explorer"
+            try:
+                subprocess.run(f'explorer shell:AppsFolder{app_name}', shell=True, check=True)
+                return f"Tentando abrir {app_name} via explorer"
+            except:
+                pass
+        
+        # Se chegou aqui, não conseguiu abrir o aplicativo
+        return f"Não foi possível encontrar ou abrir {app_name}"
+    
     except Exception as e:
-        return f"Erro: {str(e)}"
+        print(f"DEBUG: Erro ao abrir aplicativo: {str(e)}")
+        return f"Erro ao abrir {app_name}: {str(e)}"
     
 def github_operations(operation, repo_name=None, description=None, local_path=None):
     """
     Perform GitHub operations like creating, cloning or deleting repositories.
     """
     try:
-        # You'll need to install PyGithub: pip install PyGithub
         from github import Github
         import os
         
-        # Get GitHub token from environment variable
         github_token = os.getenv("GITHUB_TOKEN")
         if not github_token:
             return "Erro: Token do GitHub não encontrado. Configure a variável GITHUB_TOKEN."
@@ -223,19 +314,16 @@ def github_operations(operation, repo_name=None, description=None, local_path=No
             if not repo_name:
                 return "Erro: Nome do repositório não fornecido."
             
-            # Create the repository
             repo = user.create_repo(
                 name=repo_name,
                 description=description or "",
                 private=True
             )
             
-            # If local_path is provided, initialize the repo locally
             if local_path:
                 os.makedirs(local_path, exist_ok=True)
                 os.chdir(local_path)
                 
-                # Initialize git repo
                 commands = [
                     f'git init',
                     f'echo "# {repo_name}" > README.md',
@@ -257,7 +345,6 @@ def github_operations(operation, repo_name=None, description=None, local_path=No
             if not repo_name:
                 return "Erro: Nome do repositório não fornecido."
             
-            # Find the repository
             repo = None
             for r in user.get_repos():
                 if r.name == repo_name:
@@ -267,7 +354,6 @@ def github_operations(operation, repo_name=None, description=None, local_path=No
             if not repo:
                 return f"Erro: Repositório {repo_name} não encontrado."
             
-            # Clone the repository
             clone_path = local_path or os.path.join(os.getcwd(), repo_name)
             subprocess.run(f'git clone {repo.clone_url} "{clone_path}"', shell=True, check=True)
             
@@ -277,7 +363,6 @@ def github_operations(operation, repo_name=None, description=None, local_path=No
             if not repo_name:
                 return "Erro: Nome do repositório não fornecido."
             
-            # Find and delete the repository
             for repo in user.get_repos():
                 if repo.name == repo_name:
                     repo.delete()

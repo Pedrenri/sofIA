@@ -255,7 +255,6 @@ class JarvisClient:
                         response_create_event = {"type": "response.create"}
                         self.ws.send(json.dumps(response_create_event))
                     
-                    # Handle github_operations function
                     elif func_name == "github_operations":
                         operation = args.get("operation")
                         repo_name = args.get("repo_name")
