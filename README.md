@@ -1,6 +1,6 @@
 # sofIA
 
-SofIA é uma assistente pessoal de IA criada usando Python que utiliza a API da OpenAI e consegue gerenciar e auxiliar no uso do computador.
+SofIA é uma assistente pessoal de IA criada usando Python que utiliza a API da OpenAI e consegue gerenciar e auxiliar no uso do computador. Pode ser configurada para rodar localmente ou em um dispositivo externo. Hoje utilizo um Raspberry Pi para rodar na minha rede privada.
 
 ## Requisitos
 
