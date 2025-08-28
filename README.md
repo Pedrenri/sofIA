@@ -74,6 +74,7 @@ ProgramFiles(x86)='C:\\Program Files (x86)'
 
 # MISC
 ALEXA_ROUTINES='SUAS ROTINAS'
+DEV_MODE=False
 ```
 
 > **Dica:** Não faça commit do `.env`. Adicione-o ao `.gitignore`.
@@ -82,13 +83,27 @@ ALEXA_ROUTINES='SUAS ROTINAS'
 
 ## 🚀 Executando
 
-Inicie a interface **Streamlit**:
+Inicie a **SofIA**:
+
+```bash
+python app.py
+```
+
+Caso queira abrir em modo de desenvolvedor (interface Web com Streamlit):
+
+1. Altere o `.env`:
+
+```ini
+DEV_MODE=True
+```
+
+2. Inicie com Streamlit:
 
 ```bash
 streamlit run app.py
 ```
 
-Abra o link exibido no terminal no seu navegador.
+3. Acesse o endereço exibido no terminal.
 
 ---
 
