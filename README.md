@@ -62,7 +62,7 @@ INITIAL_PROMPT='Você é um assistente virtual chamado SofIA. Sua função é ge
 DEVICE='windows'
 VAD='True'
 FUNCTION_CALLING='True'
-VOICE='sage'
+VOICE='echo'
 INCLUDE_TIME='True'
 INCLUDE_DATE='True'
 

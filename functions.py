@@ -9,15 +9,15 @@ from pyautogui import ImageNotFoundException
 
 load_dotenv()
 
-""" TODO: 
-    - Implementar funções com a Amazon (controle de dispositivos Alexa) -- FEITO, PENDENTE DOCS
+""" TODO:
+    - 🆗 Implementar funções com a Amazon (controle de dispositivos Alexa); 🆗
     - Implementar funções para controle de navegadores e música no computador host;
     - Implementar funções para melhor controle das impressoras 3D Bambu Lab (estudar conexão com Prusa no futuro)
     - Implementar melhorias de UI e UX:
-        - Adicionar wake-word para ativação por voz direta do programa;
-        - Adicionar capacidade de rodar e escutar em background;
+        - 🆗 Adicionar wake-word para ativação por voz direta do programa; 🆗
+        - 🆗 Adicionar capacidade de rodar e escutar em background; 🆗
         - Adicionar suporte de overlay (identifica wake-word -> exibe overlay no monitor -> ouve -> executa)
-        - Adicionar modo de desenvolvimento (com front como é atualmente.)
+        - 🆗 Adicionar modo de desenvolvimento (com front como é atualmente.) 🆗
 """
 
 alexa_device_states = {
@@ -32,6 +32,8 @@ def run_alexa_routine(routine: str):
     Run a predefined Alexa routine.
     """
 
+    print("DEBUG: Running Alexa routine:", routine)
+
     if not alexa_webhook:
         return "Error: Alexa webhook URL is not configured."
 
@@ -45,13 +47,30 @@ def run_alexa_routine(routine: str):
     if routine not in routine_mapping:
         return f"Error: Unknown routine '{routine}'."
 
+    if routine == "LuzQuartoOn" and alexa_device_states["quarto"]:
+        routine = "LuzQuartoOff"
+        alexa_device_states["quarto"] = False
+
+    if routine == "LuzSalaOn" and alexa_device_states["sala"]:
+        routine = "LuzSalaOff"
+        alexa_device_states["sala"] = False
+
+    print("DEBUG: Running Alexa routine:", routine)
+
     device, state = routine_mapping[routine]
     alexa_device_states[device] = state
 
     try:
         url = f"{alexa_webhook}/{routine}"
         response = requests.get(url)
-        return response.data
+
+        if "data" in response.json():
+            event_id = response.json()["data"][0].get("id")
+            if event_id.startswith("SUCCESS"):
+                return "Success!"
+            else:
+                return f"Failed to trigger routine '{routine}': {event_id}"
+
     except Exception as e:
         return str(e)
 

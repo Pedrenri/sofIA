@@ -18,7 +18,7 @@ load_dotenv()  # load .env variables
 alexa_routines = os.getenv("ALEXA_ROUTINES", "").split(",")
 
 class SofIAClient:
-    def __init__(self, *, api_key=None, device=None, model=None, initial_prompt=None, 
+    def __init__(self, *, api_key=None, device=None, initial_prompt=None, 
                  include_date=True, include_time=True, mode="realtime", function_calling=True, voice=None):
         """
         mode: "realtime" for audio chat (with mic streaming) or "text" for text-only chat.
@@ -80,7 +80,7 @@ class SofIAClient:
         response_create_event = {
             "type": "response.create",
             "response": {
-                "modalities": ["text"]
+                "modalities": ["text", "audio"] if self.mode == "realtime" else ["text"]
             }
         }
         self.ws.send(json.dumps(response_create_event))
@@ -310,7 +310,6 @@ class SofIAClient:
                             print(f"DEBUG: Sending text from response.output_item.done: {text}")
                             self.on_text_response(text)
         
-
     def on_error(self, ws, error):
         print(f"[WebSocket ERROR]: {error}")
 
@@ -404,13 +403,13 @@ class SofIAClient:
                 {
                     "type": "function",
                     "name": "run_alexa_routine",
-                    "description": "Run a predefined Alexa routine.",
+                    "description": "Run a predefined Alexa routine. If user just says to turn on/off the lights, default is LuzQuartoOn, LuzSala will only be used when specified.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "routine": {
                                 "type": "string",
-                                "description": f"The routine name to trigger. Options: {', '.join(alexa_routines)}."
+                                "description": f"The routine name to trigger. Options: {', '.join(alexa_routines)}. (if user just says to turn on/off the lights, default is LuzQuartoOn, LuzSala will only be used when specified.)"
                             }
                         },
                         "required": ["routine"]
