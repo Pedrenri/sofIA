@@ -2,7 +2,7 @@ import os
 import streamlit as st
 from dotenv import load_dotenv, set_key
 from PIL import Image
-from s2s import JarvisClient  # adjust the import based on your project structure
+from s2s import SofIAClient  # adjust the import based on your project structure
 
 # Load environment variables from .env
 load_dotenv()
@@ -34,9 +34,9 @@ if "settings" not in st.session_state:
         "PC_USERNAME": os.getenv("PC_USERNAME", "YourUsername")
     }
 
-# Initialize the Jarvis text client if not already done.
+# Initialize the SofIA text client if not already done.
 if "text_client" not in st.session_state or st.session_state.text_client is None:
-    st.session_state.text_client = JarvisClient(
+    st.session_state.text_client = SofIAClient(
         api_key=st.session_state.settings["OPENAI_API_KEY"],
         model=st.session_state.settings["OPENAI_MODEL"],
         initial_prompt=st.session_state.settings["INITIAL_PROMPT"],
@@ -75,7 +75,7 @@ with tabs[1]:
     st.header("🎙️ Conversa por áudio em tempo real")
     if "realtime_client" not in st.session_state or st.session_state.realtime_client is None:
         if st.button("Iniciar Conversa"):
-            st.session_state.realtime_client = JarvisClient(
+            st.session_state.realtime_client = SofIAClient(
                 api_key=st.session_state.settings["OPENAI_API_KEY"],
                 model=st.session_state.settings["OPENAI_MODEL"],
                 initial_prompt=st.session_state.settings["INITIAL_PROMPT"],

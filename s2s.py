@@ -11,11 +11,11 @@ import time
 import queue
 
 # Import our custom functions from functions.py
-from functions import run_os_command, print_message, print_stl
+from functions import run_alexa_routine, run_os_command, print_message, print_stl
 
 load_dotenv()  # load .env variables
 
-class JarvisClient:
+class SofIAClient:
     def __init__(self, *, api_key=None, device=None, model=None, initial_prompt=None, 
                  include_date=True, include_time=True, mode="realtime", function_calling=True, voice=None):
         """
@@ -27,7 +27,7 @@ class JarvisClient:
         if not self.api_key:
             raise ValueError("API key not found in .env file.")
         self.device = device or os.getenv("DEVICE", "unknown")
-        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini-realtime-preview-2024-12-17")
+        self.model = "gpt-4o-mini-realtime-preview-2024-12-17"
         self.initial_prompt = initial_prompt or os.getenv("INITIAL_PROMPT", "")
         self.include_date = include_date
         self.include_time = include_time
@@ -169,6 +169,22 @@ class JarvisClient:
                             self.ws.send(json.dumps(output_event))
                             response_create_event = {"type": "response.create"}
                             self.ws.send(json.dumps(response_create_event))
+                    # Handle run_alexa_routine
+                    elif func_name == "run_alexa_routine":
+                        routine = args.get("routine")
+                        if routine:
+                            result = run_alexa_routine(routine)
+                            output_event = {
+                                "type": "conversation.item.create",
+                                "item": {
+                                    "type": "function_call_output",
+                                    "call_id": call_id,
+                                    "output": json.dumps({"result": result})
+                                }
+                            }
+                            self.ws.send(json.dumps(output_event))
+                            response_create_event = {"type": "response.create"}
+                            self.ws.send(json.dumps(response_create_event))
                     # Handle print function
                     elif func_name == "print":
                         message_to_print = args.get("message")
@@ -294,11 +310,10 @@ class JarvisClient:
         
 
     def on_error(self, ws, error):
-        print("DEBUG: WebSocket error:", error)
+        print(f"[WebSocket ERROR]: {error}")
 
     def on_close(self, ws, close_status_code, close_msg):
-        print("DEBUG: WebSocket closed")
-        self.running = False
+        print(f"[WebSocket CLOSED] Code: {close_status_code}, Msg: {close_msg}")
 
     def on_open(self, ws):
         # For realtime mode, open an output audio stream
@@ -382,6 +397,21 @@ class JarvisClient:
                             }
                         },
                         "required": ["file_path", "content"]
+                    }
+                },
+                {
+                    "type": "function",
+                    "name": "run_alexa_routine",
+                    "description": "Run a predefined Alexa routine.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "routine": {
+                                "type": "string",
+                                "description": "The routine name to trigger. Options: 'LuzQuartoOn', 'LuzQuartoOff', 'LuzSalaOn', 'LuzSalaOff'."
+                            }
+                        },
+                        "required": ["routine"]
                     }
                 },
                 {

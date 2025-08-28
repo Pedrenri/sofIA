@@ -3,7 +3,57 @@ import subprocess
 import time
 import traceback
 import pyautogui
+import requests
+from dotenv import load_dotenv
 from pyautogui import ImageNotFoundException
+
+load_dotenv()
+
+""" TODO: 
+    - Implementar funções com a Amazon (controle de dispositivos Alexa, estudar Google Home)
+    - Implementar funções para controle de navegadores e música no computador host;
+    - Implementar funções para melhor controle das impressoras 3D Bambu Lab (estudar conexão com Prusa no futuro)
+    - Implementar melhorias de UI e UX:
+        - Adicionar wake-word para ativação por voz direta do programa;
+        - Adicionar capacidade de rodar e escutar em background;
+        - Adicionar suporte de overlay (identifica wake-word -> exibe overlay no monitor -> ouve -> executa)
+        - Adicionar modo de desenvolvimento (com front como é atualmente.)
+"""
+
+alexa_device_states = {
+    "quarto" : False,
+    "sala" : False
+}
+
+alexa_webhook = os.getenv("IFTTlink")
+
+def run_alexa_routine(routine: str):
+    """
+    Run a predefined Alexa routine.
+    """
+
+    if not alexa_webhook:
+        return "Error: Alexa webhook URL is not configured."
+
+    routine_mapping = {
+        "LuzQuartoOn": ("quarto", True),
+        "LuzQuartoOff": ("quarto", False),
+        "LuzSalaOn": ("sala", True),
+        "LuzSalaOff": ("sala", False),
+    }
+
+    if routine not in routine_mapping:
+        return f"Error: Unknown routine '{routine}'."
+
+    device, state = routine_mapping[routine]
+    alexa_device_states[device] = state
+
+    try:
+        url = f"{alexa_webhook}/{routine}"
+        response = requests.get(url)
+        return response.data
+    except Exception as e:
+        return str(e)
 
 def run_os_command(command: str) -> str:
     """
@@ -19,7 +69,7 @@ def print_message(message: str) -> str:
     """
     Print a message in the terminal and return an acknowledgement.
     """
-    print(f"Jarvis Print: {message}")
+    print(f"SofIA Print: {message}")
     return f"Printed: {message}"
 
 def print_stl(stl_file: str, pc_username: str = None) -> str:
@@ -155,8 +205,8 @@ def create_file(file_path, content):
         
 def open_application(app_name):
     """
-    Encontra e abre um aplicativo pelo nome, usando várias estratégias para
-    localizar aplicativos no Windows.
+    Finds and opens an application by name, using various strategies to
+    locate applications in Windows
     """
     try:
         import os
@@ -295,10 +345,15 @@ def open_application(app_name):
         print(f"DEBUG: Erro ao abrir aplicativo: {str(e)}")
         return f"Erro ao abrir {app_name}: {str(e)}"
     
-def github_operations(operation, repo_name=None, description=None, local_path=None):
-    """
+
+
+"""
+Removida temporariamente para simplificação e correção.
+"""
+
+""" def github_operations(operation, repo_name=None, description=None, local_path=None):
     Perform GitHub operations like creating, cloning or deleting repositories.
-    """
+    
     try:
         from github import Github
         import os
@@ -374,4 +429,4 @@ def github_operations(operation, repo_name=None, description=None, local_path=No
             return f"Operação desconhecida: {operation}"
             
     except Exception as e:
-        return f"Erro na operação do GitHub: {str(e)}"
+        return f"Erro na operação do GitHub: {str(e)}" """
