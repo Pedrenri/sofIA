@@ -162,10 +162,10 @@ sofIA/
 * - [ ] **Impressoras 3D Bambu Lab**: controle aprimorado (avaliar integração futura com **Prusa**).
 * - [ ] **Melhorias de UI/UX**:
 
-  * - [ ] Wake-word para ativação por voz direta do programa.
-  * - [ ] Rodar/escutar em **background**.
+  * - [x] Wake-word para ativação por voz direta do programa.
+  * - [x] Rodar/escutar em **background**.
   * - [ ] **Overlay**: detectar wake-word → mostrar overlay → ouvir → executar.
-  * - [ ] **Modo de desenvolvimento** (front atual como Dev UI).
+  * - [x] **Modo de desenvolvimento** (front atual como Dev UI).
 
 ### Ideias futuras
 
