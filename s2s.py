@@ -15,6 +15,8 @@ from functions import run_alexa_routine, run_os_command, print_message, print_st
 
 load_dotenv()  # load .env variables
 
+alexa_routines = os.getenv("ALEXA_ROUTINES", "").split(",")
+
 class SofIAClient:
     def __init__(self, *, api_key=None, device=None, model=None, initial_prompt=None, 
                  include_date=True, include_time=True, mode="realtime", function_calling=True, voice=None):
@@ -408,7 +410,7 @@ class SofIAClient:
                         "properties": {
                             "routine": {
                                 "type": "string",
-                                "description": "The routine name to trigger. Options: 'LuzQuartoOn', 'LuzQuartoOff', 'LuzSalaOn', 'LuzSalaOff'."
+                                "description": f"The routine name to trigger. Options: {', '.join(alexa_routines)}."
                             }
                         },
                         "required": ["routine"]

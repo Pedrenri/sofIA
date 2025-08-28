@@ -10,7 +10,7 @@ from pyautogui import ImageNotFoundException
 load_dotenv()
 
 """ TODO: 
-    - Implementar funções com a Amazon (controle de dispositivos Alexa, estudar Google Home)
+    - Implementar funções com a Amazon (controle de dispositivos Alexa) -- FEITO, PENDENTE DOCS
     - Implementar funções para controle de navegadores e música no computador host;
     - Implementar funções para melhor controle das impressoras 3D Bambu Lab (estudar conexão com Prusa no futuro)
     - Implementar melhorias de UI e UX:
@@ -25,7 +25,7 @@ alexa_device_states = {
     "sala" : False
 }
 
-alexa_webhook = os.getenv("IFTTlink")
+alexa_webhook = os.getenv("IFTTTTUrl")
 
 def run_alexa_routine(routine: str):
     """
