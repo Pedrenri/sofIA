@@ -1,6 +1,7 @@
 # SofIA 🤖
+> Supervisiona Os Fluxos, Ignora Autoridade
 
-**SofIA (Sistema Operacional Funcional de IA)** é uma assistente pessoal de Inteligência Artificial desenvolvida em **Python**, utilizando a **API da OpenAI**. Ela gerencia e auxilia no uso do computador (processos, apps, arquivos) e integra-se com dispositivos inteligentes (Alexa/IFTTTrigger). Pode rodar localmente ou em um dispositivo externo (ex.: **Raspberry Pi**).
+**SofIA** é uma assistente pessoal de Inteligência Artificial desenvolvida em **Python**, utilizando a **API da OpenAI**. Ela gerencia e auxilia no uso do computador (processos, apps, arquivos) e integra-se com dispositivos inteligentes (Alexa/IFTTTrigger). Pode rodar localmente ou em um dispositivo externo (ex.: **Raspberry Pi**).
 
 ---
 
