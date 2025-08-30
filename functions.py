@@ -73,11 +73,29 @@ def run_alexa_routine(routine: str):
 
     except Exception as e:
         return str(e)
+    
+# Isso foi adicionado para evitar que a SofIA desligue a si mesma.
+
+FORBIDDEN_COMMANDS = [
+    "shutdown",
+    "reboot",
+    "poweroff",
+    "logoff",
+    "desligar",
+    "reiniciar",
+    "shutdown.exe"
+]
 
 def run_os_command(command: str) -> str:
     """
-    Execute an OS system command and return its output.
+    Execute an OS system command and return its output,
+    but block dangerous commands like shutdown or reboot.
     """
+    command_lower = command.lower()
+
+    if any(word in command_lower for word in FORBIDDEN_COMMANDS):
+        return "⚠️ Comando bloqueado por segurança."
+
     try:
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
         return result.stdout.strip() if result.stdout.strip() else result.stderr.strip()
