@@ -9,16 +9,14 @@ import datetime
 import subprocess
 import time
 import queue
+from functions import lights_control, run_os_command, print_message, print_stl, create_file, open_application
 
-# Import our custom functions from functions.py
-from functions import run_alexa_routine, run_os_command, print_message, print_stl
-
-load_dotenv()  # load .env variables
+load_dotenv()  # carrega o .env
 
 alexa_routines = os.getenv("ALEXA_ROUTINES", "").split(",")
 
 class SofIAClient:
-    def __init__(self, *, api_key=None, device=None, initial_prompt=None, 
+    def __init__(self, *, api_key=None, device=None, 
                  include_date=True, include_time=True, mode="realtime", function_calling=True, voice=None):
         """
         mode: "realtime" for audio chat (with mic streaming) or "text" for text-only chat.
@@ -30,24 +28,21 @@ class SofIAClient:
             raise ValueError("API key not found in .env file.")
         self.device = device or os.getenv("DEVICE", "unknown")
         self.model = "gpt-4o-mini-realtime-preview-2024-12-17"
-        self.initial_prompt = initial_prompt or os.getenv("INITIAL_PROMPT", "")
         self.include_date = include_date
         self.include_time = include_time
         self.mode = mode
         self.function_calling = function_calling
-        self.voice = voice or os.getenv("VOICE", "echo")
-        self.pc_username = os.getenv("PC_USERNAME", "YourUsername")  # New: load PC_USERNAME
-
+        self.voice = voice or os.getenv("VOICE", "sage")
+        self.pc_username = os.getenv("PC_USERNAME", "YourUsername")
+        self.last_audio_event = 0
         self.ws = None
         self.ws_thread = None
         self.running = False
         
-        # PyAudio instance and stream placeholders (used only in realtime mode)
         self.p = pyaudio.PyAudio()
         self.output_stream = None
         self.mute_mic = False
 
-        # Callback for text responses (used in asynchronous text mode)
         self.on_text_response = None
 
     def append_tools_to_message(self, message: str) -> str:
@@ -63,6 +58,10 @@ class SofIAClient:
             return message
 
     def send_text_message(self, message: str, role: str = "user"):
+
+        print(f"DEBUG: Enviando mensagem: {message}")
+        modalities = ["text", "audio"] if self.mode == "realtime" else ["text"]
+
         full_text = self.append_tools_to_message(message)
         conversation_event = {
             "type": "conversation.item.create",
@@ -74,13 +73,12 @@ class SofIAClient:
                 ]
             }
         }
-        print(f"DEBUG: Sending text message: {full_text}")
+        # print(f"DEBUG: Enviando mensagem: {full_text}")
         self.ws.send(json.dumps(conversation_event))
-        # Trigger a text-only response creation.
         response_create_event = {
             "type": "response.create",
             "response": {
-                "modalities": ["text", "audio"] if self.mode == "realtime" else ["text"]
+                "modalities": modalities
             }
         }
         self.ws.send(json.dumps(response_create_event))
@@ -105,41 +103,45 @@ class SofIAClient:
         self.on_text_response = original_callback
         return answer
 
+    
+
     def on_message(self, ws, message):
         event = json.loads(message)
         event_type = event.get("type")
-        # Debug prints can be uncommented as needed.
-        # print(f"DEBUG: Received event of type: {event_type}")
+        # Descomenta os prints que precisar
+        # print(f"DEBUG: Recebido evento tipo: {event_type}")
         
         if event_type == "response.audio.delta":
+
             if not self.mute_mic:
                 self.mute_mic = True
-                print("DEBUG: Muting microphone due to audio playback.")
+                print("DEBUG: Mutando microfone enquanto roda o áudio de resposta.")
             audio_chunk = event.get("delta")
             if audio_chunk and self.output_stream:
                 audio_data = base64.b64decode(audio_chunk)
                 self.output_stream.write(audio_data)
         
         elif event_type == "response.audio.done":
+            print(event)
             def delayed_unmute():
-                time.sleep(0.5)
+                time.sleep(1)  # Pequeno atraso para garantir que o áudio terminou
+                print("DEBUG: Desmutando o microfone pós áudio.")
                 self.mute_mic = False
-                print("DEBUG: Unmuting microphone after audio playback.")
             threading.Thread(target=delayed_unmute, daemon=True).start()
         
         elif event_type == "response.text.done":
             transcript = event.get("text", "")
-            print(f"DEBUG: response.text.done received with transcript: {transcript}")
+            print(f"DEBUG: response.text.done recebido: {transcript}")
             if transcript and self.on_text_response:
                 self.on_text_response(transcript)
         
         elif event_type == "response.content_part.done":
             part = event.get("part", {})
-            print(f"DEBUG: response.content_part.done with part: {part}")
+            print(f"DEBUG: response.content_part.done com parte: {part}")
             if part.get("type") == "text":
                 final_text = part.get("text", "")
                 if final_text and self.on_text_response:
-                    print(f"DEBUG: Sending final text from response.content_part.done: {final_text}")
+                    print(f"DEBUG: Enviando texto final de response.content_part.done: {final_text}")
                     self.on_text_response(final_text)
         
         elif event_type == "response.done":
@@ -153,9 +155,9 @@ class SofIAClient:
                     try:
                         args = json.loads(arguments)
                     except Exception as e:
-                        print("DEBUG: Error parsing function call arguments:", e)
+                        print("DEBUG: Erro ao analisar argumentos da chamada de função:", e)
                         args = {}
-                    # Handle run_os_command
+                    # Gerencia execução de comandos no OS
                     if func_name == "run_os_command":
                         command = args.get("command")
                         if command:
@@ -171,11 +173,11 @@ class SofIAClient:
                             self.ws.send(json.dumps(output_event))
                             response_create_event = {"type": "response.create"}
                             self.ws.send(json.dumps(response_create_event))
-                    # Handle run_alexa_routine
-                    elif func_name == "run_alexa_routine":
+                    # Gerencia execução de comandos de luz/dispositivos Alexa
+                    elif func_name == "lights_control":
                         routine = args.get("routine")
                         if routine:
-                            result = run_alexa_routine(routine)
+                            result = lights_control(routine)
                             output_event = {
                                 "type": "conversation.item.create",
                                 "item": {
@@ -187,7 +189,7 @@ class SofIAClient:
                             self.ws.send(json.dumps(output_event))
                             response_create_event = {"type": "response.create"}
                             self.ws.send(json.dumps(response_create_event))
-                    # Handle print function
+                    # Gerencia execução de comandos de impressão
                     elif func_name == "print":
                         message_to_print = args.get("message")
                         if message_to_print:
@@ -203,11 +205,11 @@ class SofIAClient:
                             self.ws.send(json.dumps(output_event))
                             response_create_event = {"type": "response.create"}
                             self.ws.send(json.dumps(response_create_event))
-                    # Handle print_stl function
+                    # Gerencia execução de comandos de impressão 3D
                     elif func_name == "print_stl":
                         stl_file = args.get("stl_file")
                         if stl_file:
-                            # Pass the PC username from initialization
+                            # Passa o nome de usuário do PC da inicialização
                             result = print_stl(stl_file, self.pc_username)
                             output_event = {
                                 "type": "conversation.item.create",
@@ -224,7 +226,6 @@ class SofIAClient:
                         file_path = args.get("file_path")
                         content = args.get("content")
                         if file_path and content is not None:  # Permitir conteúdo vazio
-                            from functions import create_file
                             result = create_file(file_path, content)
                             print(f"DEBUG: Resultado da função create_file: {result}")
                             output_event = {
@@ -238,11 +239,10 @@ class SofIAClient:
                             self.ws.send(json.dumps(output_event))
                             response_create_event = {"type": "response.create"}
                             self.ws.send(json.dumps(response_create_event))
-                    # Handle open_application function
+                    # Gerencia execução de comandos de abertura de aplicativos
                     elif func_name == "open_application":
                         app_name = args.get("app_name")
                         if app_name:
-                            from functions import open_application
                             result = open_application(app_name)
                             output_event = {
                                 "type": "conversation.item.create",
@@ -255,59 +255,26 @@ class SofIAClient:
                             self.ws.send(json.dumps(output_event))
                             response_create_event = {"type": "response.create"}
                             self.ws.send(json.dumps(response_create_event))
-                    
-                    # Handle get_top_processes function
-                    elif func_name == "get_top_processes":
-                        count = args.get("count", 5)
-                        from functions import get_top_processes
-                        result = get_top_processes(count)
-                        output_event = {
-                            "type": "conversation.item.create",
-                            "item": {
-                                "type": "function_call_output",
-                                "call_id": call_id,
-                                "output": json.dumps({"result": result})
-                            }
-                        }
-                        self.ws.send(json.dumps(output_event))
+
+                    elif func_name == "stop_chat":
                         response_create_event = {"type": "response.create"}
-                        self.ws.send(json.dumps(response_create_event))
-                    
-                    elif func_name == "github_operations":
-                        operation = args.get("operation")
-                        repo_name = args.get("repo_name")
-                        description = args.get("description")
-                        local_path = args.get("local_path")
-                        if operation and repo_name:
-                            from functions import github_operations
-                            result = github_operations(operation, repo_name, description, local_path)
-                            output_event = {
-                                "type": "conversation.item.create",
-                                "item": {
-                                    "type": "function_call_output",
-                                    "call_id": call_id,
-                                    "output": json.dumps({"result": result})
-                                }
-                            }
-                            self.ws.send(json.dumps(output_event))
-                            response_create_event = {"type": "response.create"}
-                            self.ws.send(json.dumps(response_create_event))
+                        self.stop_realtime()
                     elif item.get("type") == "message":
                         text = item.get("text", "")
                         if text and self.on_text_response:
-                            print(f"DEBUG: Sending text from response.done: {text}")
+                            print(f"DEBUG: Enviando texto de response.done: {text}")
                             self.on_text_response(text)
         
         elif event_type == "response.output_item.done":
             item = event.get("item", {})
-            print(f"DEBUG: Handling response.output_item.done with item: {item}")
+            print(f"DEBUG: Resolvendo response.output_item.done com item: {item}")
             if item.get("type") == "message":
                 contents = item.get("content", [])
                 for content in contents:
                     if content.get("type") == "text":
                         text = content.get("text", "")
                         if text and self.on_text_response:
-                            print(f"DEBUG: Sending text from response.output_item.done: {text}")
+                            print(f"DEBUG: Enviando texto de response.output_item.done: {text}")
                             self.on_text_response(text)
         
     def on_error(self, ws, error):
@@ -317,23 +284,27 @@ class SofIAClient:
         print(f"[WebSocket CLOSED] Code: {close_status_code}, Msg: {close_msg}")
 
     def on_open(self, ws):
-        # For realtime mode, open an output audio stream
+        # Inicia a conexão WebSocket
         if self.mode == "realtime":
             self.output_stream = self.p.open(format=pyaudio.paInt16,
                                               channels=1,
                                               rate=24000,
                                               output=True,
                                               frames_per_buffer=1024)
-        # Set up the session update payload with our custom instructions and tool definitions
+        # define o payload da sessão
         session_update = {
             "type": "session.update",
             "session": {
-                "voice": self.voice,  # dynamic voice setting
+                "voice": "sage",
                 "output_audio_format": "pcm16",
-                "instructions": self.initial_prompt  # use our initial prompt as the instructions
-            }
+                "instructions": "Você é SofIA — sarcástica, prestativa, e objetiva. Regras rígidas:\
+                                1) Para qualquer ação do usuário, primeiro verifique se é possível/plausível e faça UMA única function_call apropriada e pare (sem gerar texto). Não chame funções sem necessidade, apenas controle o que você for explicitamente solicitada a controlar.\
+                                2) Aguarde o resultado da função (function_call_output). Só então responda com poucas palavras + formalidade. É essencial que você seja formal, mas ainda assim leve, natural e engraçada. Não responda como um robô. ex.: ao invés de dizer 'Luz Apagada', diga 'Feito', ou 'tudo bem' ou 'pronto' ou coisa assim.\
+                                3) Não adivinhe dispositivos se estiver ambíguo. Por padrão, caso não haja especificação, use a luz do Quarto.\
+                                4) Não repita ações nem gere várias chamadas para a mesma intenção.\
+                                5) Fale em PT-BR por padrão. Não comece diálogos desnecessários."            }
         }
-        # Only add function calling tools if enabled.
+        # Adiciona ferramentas de chamada de função se ativadas.
         if self.function_calling:
             session_update["session"]["tools"] = [
                 {
@@ -402,8 +373,8 @@ class SofIAClient:
                 },
                 {
                     "type": "function",
-                    "name": "run_alexa_routine",
-                    "description": "Run a predefined Alexa routine. If user just says to turn on/off the lights, default is LuzQuartoOn, LuzSala will only be used when specified.",
+                    "name": "lights_control",
+                    "description": "Turns on/off lights and some other devices. Should be used whenever user asks for a light to be turned on/off. If user just says to turn on/off the lights, default is LuzQuartoOn, LuzSala will only be used when specified.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -432,46 +403,9 @@ class SofIAClient:
                 },
                 {
                     "type": "function",
-                    "name": "get_top_processes",
-                    "description": "Get the top processes by CPU usage.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "count": {
-                                "type": "integer",
-                                "description": "Number of processes to return (default: 5)."
-                            }
-                        }
-                    }
-                },
-                {
-                    "type": "function",
-                    "name": "github_operations",
-                    "description": "Perform GitHub operations like creating, cloning or deleting repositories.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "operation": {
-                                "type": "string",
-                                "description": "The operation to perform: create, clone, or delete.",
-                                "enum": ["create", "clone", "delete"]
-                            },
-                            "repo_name": {
-                                "type": "string",
-                                "description": "The name of the repository."
-                            },
-                            "description": {
-                                "type": "string",
-                                "description": "Description for the repository (only for create operation)."
-                            },
-                            "local_path": {
-                                "type": "string",
-                                "description": "Local path for clone or initialization (optional)."
-                            }
-                        },
-                        "required": ["operation", "repo_name"]
-                    }
-                },
+                    "name": "stop_chat",
+                    "description": "Stop the chat session. Breaks the flux and ends the conversation whenever no input is given or user intends to end saying: 'thanks', 'that's all' or such. Every time you understand your help is not needed, you must use this function."
+                }
             ]
             session_update["session"]["tool_choice"] = "auto"
         ws.send(json.dumps(session_update))
@@ -498,7 +432,7 @@ class SofIAClient:
                 }
                 self.ws.send(json.dumps(event_data))
         except Exception as e:
-            print("DEBUG: Error capturing audio:", e)
+            print("DEBUG: Erro ao capturar áudio:", e)
         finally:
             mic_stream.stop_stream()
             mic_stream.close()
@@ -520,6 +454,7 @@ class SofIAClient:
         self.ws_thread.start()
 
     def stop_realtime(self):
+        print("DEBUG: Parando a conexão WebSocket e o áudio.")
         if self.ws:
             self.running = False
             self.ws.close()

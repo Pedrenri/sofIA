@@ -4,10 +4,13 @@ from sofia_client import get_sofia_client
 
 def listen_for_wake_word():
     recognizer = sr.Recognizer()
+    recognizer.energy_threshold = 10
     mic = sr.Microphone()
     sofia_client = get_sofia_client()
 
-    print("🔊 Ouvindo por wake-word...")
+    keywords = ["sophia", "sofia", "fia", "sophie", "sofie"]
+
+    print("🔊 Esperando a palavra de ativação...")
 
     try:
         with mic as source:
@@ -15,38 +18,26 @@ def listen_for_wake_word():
             while True:
                 try:
                     audio = recognizer.listen(source)
-                    command = recognizer.recognize_google(audio, language="pt-BR").lower()
-
-                    if "computador" in command:
-                        print("🔊 Ouvindo por wake-word...")
-
+                    command = recognizer.recognize_faster_whisper(audio, model="small", language="pt").lower()
+                    print(f"🔊 Comando reconhecido: {command}")
+                    if any(keyword in command for keyword in keywords):
                         sofia_client.start_realtime()
-                        time.sleep(1)  # aguarda a conexão se necessário
+                        time.sleep(0.7)  # aguarda a conexão se necessário
 
                         # Prompt inicial para iniciar a conversa
-                        sofia_client.send_text_message(command + " (responda em PT-BR)")
+                        sofia_client.send_text_message(command + "(responda em PT-BR)")
 
-                        # Escuta ativa por 5 segundos
-                        timeout = time.time() + 5
+                        # Escuta ativa por 8 segundos
+                        timeout = time.time() + 8
                         while True:
-                            if time.time() > timeout:
-                                print("⏳ Tempo esgotado. Voltando ao modo passivo...")
-                                print("🔊 Ouvindo por wake-word...")
+                            if time.time() > timeout and not sofia_client.mute_mic:
+                                print("⏳ Tempo esgotado. Voltando a ouvir a palavra de ativação...")
                                 sofia_client.stop_realtime()
                                 break
 
-                            try:
-                                print("🎧 Aguardando comando...")
-                                audio_cmd = recognizer.listen(source, timeout=5)
-                                command = recognizer.recognize_google(audio_cmd, language="pt-BR").lower()
-                                # print(f"🗣️ Comando detectado: {command}")
-                                timeout = time.time() + 5
-                            except sr.WaitTimeoutError:
-                                pass
-                            except sr.UnknownValueError:
-                                pass
-                            except sr.RequestError as e:
-                                print(f"Erro no reconhecimento: {e}")
+                            if sofia_client.mute_mic:
+                                timeout = time.time() + 8
+
                 except sr.UnknownValueError:
                     pass
                 except sr.RequestError as e:

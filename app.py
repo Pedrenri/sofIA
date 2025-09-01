@@ -9,12 +9,11 @@ load_dotenv()
 
 st.set_page_config(page_title="SofIA", layout="centered")
 
-dev_mode = os.getenv("DEV_MODE", "False").lower() in ("true", "1", "yes")
+dev_mod_status = os.getenv("DEV_MODE", "False").lower() in ("true", "1", "yes")
 
 
-if dev_mode:
+if dev_mod_status:
     st.warning("🚧 Modo de Desenvolvimento Ativado")
     dev_mode()
 else:
     listen_for_wake_word()
-    st.warning("SofIA ativada e rodando.")

@@ -54,28 +54,26 @@ pip install -r requirements.txt
 Crie um arquivo **`.env`** na raiz do projeto (baseie-se no `.env.example`) e preencha os campos:
 
 ```ini
-# TOKENS
+#TOKENS
 OPENAI_API_KEY='sua_chave_openai'
 IFTTTTUrl='https://mkzense.com/webhook/alexa/seu_token'
 
-# AI PARAMS
-INITIAL_PROMPT='Você é um assistente virtual chamado SofIA. Sua função é gerenciar e controlar meu computador e alguns itens inteligentes que tenho aqui na minha casa. Mantenha suas respostas sempre o mais curtas possível, não passando de 3 palavras para afirmar que você cumpriu uma solicitação, por exemplo.'
+#AI PARAMS
 DEVICE='windows'
 VAD='True'
 FUNCTION_CALLING='True'
-VOICE='echo'
 INCLUDE_TIME='True'
 INCLUDE_DATE='True'
 
-# HOST PARAMS
+#HOST PARAMS
 PC_USERNAME='conta'
 LOCALAPPDATA='C:\\Users\\conta\\AppData\\Local'
 ProgramFiles='C:\\Program Files'
 ProgramFiles(x86)='C:\\Program Files (x86)'
 
-# MISC
-ALEXA_ROUTINES='SUAS ROTINAS'
-DEV_MODE=False
+#MISC
+ALEXA_ROUTINES='Rotina1,Rotina2,...'
+DEV_MODE=Falses
 ```
 
 > **Dica:** Não faça commit do `.env`. Adicione-o ao `.gitignore`.

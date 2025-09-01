@@ -12,6 +12,7 @@ load_dotenv()
 """ TODO:
     - 🆗 Implementar funções com a Amazon (controle de dispositivos Alexa); 🆗
     - Implementar funções para controle de navegadores e música no computador host;
+    - Implementar controle e gerenciamento de agenda (foco no google calendar);
     - Implementar funções para melhor controle das impressoras 3D Bambu Lab (estudar conexão com Prusa no futuro)
     - Implementar melhorias de UI e UX:
         - 🆗 Adicionar wake-word para ativação por voz direta do programa; 🆗
@@ -20,23 +21,29 @@ load_dotenv()
         - 🆗 Adicionar modo de desenvolvimento (com front como é atualmente.) 🆗
 """
 
+
 alexa_device_states = {
-    "quarto" : False,
-    "sala" : False
+    "quarto": False,
+    "sala": False
 }
 
+_last_lights_control_time = 0
 alexa_webhook = os.getenv("IFTTTTUrl")
 
-def run_alexa_routine(routine: str):
+def lights_control(routine: str):
     """
-    Run a predefined Alexa routine.
+    Control a light/device linked to alexa.
     """
-
-    print("DEBUG: Running Alexa routine:", routine)
 
     if not alexa_webhook:
-        return "Error: Alexa webhook URL is not configured."
+        return "Erro: URL do webhook da Alexa não está configurada."
 
+    global _last_lights_control_time
+    now = time.time()
+    if now - _last_lights_control_time < 30:
+        return
+    
+    _last_lights_control_time = now
     routine_mapping = {
         "LuzQuartoOn": ("quarto", True),
         "LuzQuartoOff": ("quarto", False),
@@ -47,15 +54,10 @@ def run_alexa_routine(routine: str):
     if routine not in routine_mapping:
         return f"Error: Unknown routine '{routine}'."
 
-    if routine == "LuzQuartoOn" and alexa_device_states["quarto"]:
-        routine = "LuzQuartoOff"
-        alexa_device_states["quarto"] = False
-
-    if routine == "LuzSalaOn" and alexa_device_states["sala"]:
-        routine = "LuzSalaOff"
-        alexa_device_states["sala"] = False
-
     print("DEBUG: Running Alexa routine:", routine)
+
+    if (routine == "LuzQuartoOn" and alexa_device_states["quarto"] is True):
+        routine = "LuzQuartoOff"
 
     device, state = routine_mapping[routine]
     alexa_device_states[device] = state
@@ -67,9 +69,9 @@ def run_alexa_routine(routine: str):
         if "data" in response.json():
             event_id = response.json()["data"][0].get("id")
             if event_id.startswith("SUCCESS"):
-                return "Success!"
+                return
             else:
-                return f"Failed to trigger routine '{routine}': {event_id}"
+                return f"Falha ao ativar a rotina '{routine}': {event_id}"
 
     except Exception as e:
         return str(e)
@@ -80,7 +82,6 @@ FORBIDDEN_COMMANDS = [
     "shutdown",
     "reboot",
     "poweroff",
-    "logoff",
     "desligar",
     "reiniciar",
     "shutdown.exe"
@@ -382,88 +383,3 @@ def open_application(app_name):
         print(f"DEBUG: Erro ao abrir aplicativo: {str(e)}")
         return f"Erro ao abrir {app_name}: {str(e)}"
     
-
-
-"""
-Removida temporariamente para simplificação e correção.
-"""
-
-""" def github_operations(operation, repo_name=None, description=None, local_path=None):
-    Perform GitHub operations like creating, cloning or deleting repositories.
-    
-    try:
-        from github import Github
-        import os
-        
-        github_token = os.getenv("GITHUB_TOKEN")
-        if not github_token:
-            return "Erro: Token do GitHub não encontrado. Configure a variável GITHUB_TOKEN."
-        
-        g = Github(github_token)
-        user = g.get_user()
-        
-        if operation == "create":
-            if not repo_name:
-                return "Erro: Nome do repositório não fornecido."
-            
-            repo = user.create_repo(
-                name=repo_name,
-                description=description or "",
-                private=True
-            )
-            
-            if local_path:
-                os.makedirs(local_path, exist_ok=True)
-                os.chdir(local_path)
-                
-                commands = [
-                    f'git init',
-                    f'echo "# {repo_name}" > README.md',
-                    f'git add README.md',
-                    f'git commit -m "Initial commit"',
-                    f'git branch -M main',
-                    f'git remote add origin {repo.clone_url}',
-                    f'git push -u origin main'
-                ]
-                
-                for cmd in commands:
-                    subprocess.run(cmd, shell=True, check=True)
-                
-                return f"Repositório {repo_name} criado e inicializado em {local_path}"
-            
-            return f"Repositório {repo_name} criado com sucesso."
-            
-        elif operation == "clone":
-            if not repo_name:
-                return "Erro: Nome do repositório não fornecido."
-            
-            repo = None
-            for r in user.get_repos():
-                if r.name == repo_name:
-                    repo = r
-                    break
-            
-            if not repo:
-                return f"Erro: Repositório {repo_name} não encontrado."
-            
-            clone_path = local_path or os.path.join(os.getcwd(), repo_name)
-            subprocess.run(f'git clone {repo.clone_url} "{clone_path}"', shell=True, check=True)
-            
-            return f"Repositório {repo_name} clonado para {clone_path}"
-            
-        elif operation == "delete":
-            if not repo_name:
-                return "Erro: Nome do repositório não fornecido."
-            
-            for repo in user.get_repos():
-                if repo.name == repo_name:
-                    repo.delete()
-                    return f"Repositório {repo_name} excluído com sucesso."
-            
-            return f"Erro: Repositório {repo_name} não encontrado."
-            
-        else:
-            return f"Operação desconhecida: {operation}"
-            
-    except Exception as e:
-        return f"Erro na operação do GitHub: {str(e)}" """
