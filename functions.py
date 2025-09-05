@@ -28,7 +28,7 @@ alexa_device_states = {
 }
 
 _last_lights_control_time = 0
-alexa_webhook = os.getenv("IFTTTTUrl")
+alexa_webhook = os.getenv("IFTTTUrl")
 
 def lights_control(routine: str):
     """
@@ -40,7 +40,7 @@ def lights_control(routine: str):
 
     global _last_lights_control_time
     now = time.time()
-    if now - _last_lights_control_time < 30:
+    if now - _last_lights_control_time < 2:
         return
     
     _last_lights_control_time = now

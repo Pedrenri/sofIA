@@ -1,46 +1,62 @@
-import speech_recognition as sr
 import time
 from sofia_client import get_sofia_client
+import pvporcupine
+import pyaudio
+import struct
+import dotenv
+import os
 
 def listen_for_wake_word():
-    recognizer = sr.Recognizer()
-    recognizer.energy_threshold = 10
-    mic = sr.Microphone()
-    sofia_client = get_sofia_client()
+    dotenv.load_dotenv()
 
-    keywords = ["sophia", "sofia", "fia", "sophie", "sofie"]
+    porcupine = pvporcupine.create(
+        access_key=os.getenv("PICOVOICE_KEY"),
+        keyword_paths=["./Sofia_pt_windows_v3_0_0.ppn"],
+        model_path="porcupine_params_pt.pv"
+    )
+
+    pa = pyaudio.PyAudio()
+    audio_stream = pa.open(
+        rate=porcupine.sample_rate,
+        channels=1,
+        format=pyaudio.paInt16,
+        input=True,
+        frames_per_buffer=porcupine.frame_length
+    )
+
+    sofia_client = get_sofia_client()
 
     print("🔊 Esperando a palavra de ativação...")
 
     try:
-        with mic as source:
-            recognizer.adjust_for_ambient_noise(source)
-            while True:
-                try:
-                    audio = recognizer.listen(source)
-                    command = recognizer.recognize_faster_whisper(audio, model="small", language="pt").lower()
-                    print(f"🔊 Comando reconhecido: {command}")
-                    if any(keyword in command for keyword in keywords):
-                        sofia_client.start_realtime()
-                        time.sleep(0.7)  # aguarda a conexão se necessário
+        while True:
+            pcm = audio_stream.read(porcupine.frame_length, exception_on_overflow=False)
+            pcm = struct.unpack_from("h" * porcupine.frame_length, pcm)
 
-                        # Prompt inicial para iniciar a conversa
-                        sofia_client.send_text_message(command + "(responda em PT-BR)")
+            result = porcupine.process(pcm)
+            if result >= 0:  # Wake word detectada
+                print("🚀 Wake word detectada: Sofia")
+                sofia_client.start_realtime()
+                time.sleep(0.5)
 
-                        # Escuta ativa por 8 segundos
-                        timeout = time.time() + 8
-                        while True:
-                            if time.time() > timeout and not sofia_client.mute_mic:
-                                print("⏳ Tempo esgotado. Voltando a ouvir a palavra de ativação...")
-                                sofia_client.stop_realtime()
-                                break
+                timeout = time.time() + 30
+                
+                while True:
+                    if (time.time() > timeout and not sofia_client.mute_mic):
+                        print("⏳ Tempo esgotado. Voltando a ouvir a palavra de ativação...")
+                        sofia_client.stop_realtime()
+                        break
 
-                            if sofia_client.mute_mic:
-                                timeout = time.time() + 8
+                    if (not sofia_client.running):
+                        print("⏳ Finalizado. Voltando a ouvir a palavra de ativação...")
+                        break
 
-                except sr.UnknownValueError:
-                    pass
-                except sr.RequestError as e:
-                    print(f"Erro no reconhecimento: {e}")
+                    if sofia_client.mute_mic:
+                        timeout = time.time() + 30
+
     except KeyboardInterrupt:
         print("\nListener finalizado pelo usuário")
+    finally:
+        audio_stream.close()
+        pa.terminate()
+        porcupine.delete()

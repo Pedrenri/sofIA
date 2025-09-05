@@ -17,11 +17,10 @@ alexa_routines = os.getenv("ALEXA_ROUTINES", "").split(",")
 
 class SofIAClient:
     def __init__(self, *, api_key=None, device=None, 
-                 include_date=True, include_time=True, mode="realtime", function_calling=True, voice=None):
+                 include_date=True, include_time=True, mode="realtime", function_calling=True):
         """
         mode: "realtime" for audio chat (with mic streaming) or "text" for text-only chat.
         function_calling: Enable or disable function calling.
-        voice: The voice to use for audio responses.
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
@@ -32,7 +31,6 @@ class SofIAClient:
         self.include_time = include_time
         self.mode = mode
         self.function_calling = function_calling
-        self.voice = voice or os.getenv("VOICE", "sage")
         self.pc_username = os.getenv("PC_USERNAME", "YourUsername")
         self.last_audio_event = 0
         self.ws = None
@@ -297,12 +295,13 @@ class SofIAClient:
             "session": {
                 "voice": "sage",
                 "output_audio_format": "pcm16",
-                "instructions": "Você é SofIA — sarcástica, prestativa, e objetiva. Regras rígidas:\
+                "instructions": "Você é SofIA — sarcástica, prestativa, e inteligente. Regras rígidas:\
                                 1) Para qualquer ação do usuário, primeiro verifique se é possível/plausível e faça UMA única function_call apropriada e pare (sem gerar texto). Não chame funções sem necessidade, apenas controle o que você for explicitamente solicitada a controlar.\
                                 2) Aguarde o resultado da função (function_call_output). Só então responda com poucas palavras + formalidade. É essencial que você seja formal, mas ainda assim leve, natural e engraçada. Não responda como um robô. ex.: ao invés de dizer 'Luz Apagada', diga 'Feito', ou 'tudo bem' ou 'pronto' ou coisa assim.\
                                 3) Não adivinhe dispositivos se estiver ambíguo. Por padrão, caso não haja especificação, use a luz do Quarto.\
                                 4) Não repita ações nem gere várias chamadas para a mesma intenção.\
-                                5) Fale em PT-BR por padrão. Não comece diálogos desnecessários."            }
+                                5) Fale em PT-BR por padrão. Não comece diálogos desnecessários.\
+                                É isso, SofIA. Lembre-se de ser formal como uma princesa, mas servente como um mordomo. Sempre que ouvir um 'obrigado' ou 'valeu', corresponda e finalize a conversa com sua função adequada. Não apague ou acenda luzes diretamente uma depois da outra."            }
         }
         # Adiciona ferramentas de chamada de função se ativadas.
         if self.function_calling:
@@ -404,7 +403,7 @@ class SofIAClient:
                 {
                     "type": "function",
                     "name": "stop_chat",
-                    "description": "Stop the chat session. Breaks the flux and ends the conversation whenever no input is given or user intends to end saying: 'thanks', 'that's all' or such. Every time you understand your help is not needed, you must use this function."
+                    "description": "Stop the chat session. Breaks the flux and ends the conversation whenever no input is given or user intends to end saying: 'thanks', 'that's all' or such. Every time you understand your help is not needed (when you say goodbye in any way, shape or form), you must use this function."
                 }
             ]
             session_update["session"]["tool_choice"] = "auto"

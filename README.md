@@ -2,7 +2,7 @@
 > Supervisiona Os Fluxos, Ignora Autoridade
 
 **SofIA** é uma assistente pessoal de Inteligência Artificial desenvolvida em **Python**, utilizando a **API da OpenAI**. Ela gerencia e auxilia no uso do computador (processos, apps, arquivos) e integra-se com dispositivos inteligentes (Alexa/IFTTTrigger). Pode rodar localmente ou em um dispositivo externo (ex.: **Raspberry Pi**).
-
+> Este projeto é 100% open-source e gratuito para uso pessoal, mas exige uma chave de API da OpenAI e uma assinatura do IFTTTTrigger para funcionar por completo.
 ---
 
 ## ✨ Funcionalidades
@@ -56,7 +56,8 @@ Crie um arquivo **`.env`** na raiz do projeto (baseie-se no `.env.example`) e pr
 ```ini
 #TOKENS
 OPENAI_API_KEY='sua_chave_openai'
-IFTTTTUrl='https://mkzense.com/webhook/alexa/seu_token'
+IFTTTUrl='https://mkzense.com/webhook/alexa/seu_token'
+PICOVOICE_KEY='sua_chave_picovoice'
 
 #AI PARAMS
 DEVICE='windows'
@@ -110,10 +111,10 @@ streamlit run app.py
 
 1. Assine o [**IFTTTrigger**](https://mkzense.com/) (plano pago, \~US\$ 5/ano). Para fazê-lo, basta ativar a skill no Alexa App.
 2. Na [**Página de Gerenciamento de WebHook**](https://mkzense.com/webhook), cadastre o e-mail da sua conta Amazon.
-3. Use o token recebido por e-mail na variável `IFTTTTUrl`:
+3. Use o token recebido por e-mail na variável `IFTTTUrl`:
 
    ```ini
-   IFTTTTUrl='https://mkzense.com/webhook/alexa/{TOKEN}'
+   IFTTTUrl='https://mkzense.com/webhook/alexa/{TOKEN}'
    ```
 4. Crie **Triggers** com os nomes das suas rotinas (ex.: `LuzSalaOn`, `LuzSalaOff`).
 5. Liste as rotinas que deseja controlar em `ALEXA_ROUTINES` (ex.: separado por vírgula):
@@ -126,12 +127,20 @@ O código já trata essa string para permitir que a IA dispare as rotinas.
 
 ---
 
+## 🔗 Links relacionados
+
+- [Documentação da API da OpenAI](https://platform.openai.com/docs/api-reference)
+- [IFTTTrigger](https://mkzense.com/)
+- [Porcupine](https://picovoice.ai/docs/porcupine/)
+
+---
+
 ## 🧪 Exemplos de comandos
 
 * **Abrir programa**: “SofIA, abra o Chrome.”
 * **Rotina Alexa**: “SofIA, acenda a luz da sala.”
 * **Processos**: “SofIA, encerre o Spotify.”
-* **GitHub**: “SofIA, clone o repositório do Constru.”
+* **GitHub**: “SofIA, clone o repositório do meu portfólio.”
 
 ---
 
@@ -194,7 +203,7 @@ sofIA/
 ## 🧰 Solução de problemas
 
 * **Erro de autenticação OpenAI**: verifique `OPENAI_API_KEY` no `.env`.
-* **Rotinas Alexa não disparam**: confira `IFTTTTUrl` e os nomes em `ALEXA_ROUTINES`.
+* **Rotinas Alexa não disparam**: confira `IFTTTUrl` e os nomes em `ALEXA_ROUTINES`.
 * **Permissões no Windows**: execute o terminal como **Administrador** para ações de sistema.
 * **Áudio/VAD**: verifique dispositivos de entrada e permissões do microfone.
 

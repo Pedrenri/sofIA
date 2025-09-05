@@ -15,6 +15,5 @@ def get_sofia_client():
             include_time=os.getenv("INCLUDE_TIME", "True").lower() in ("true", "1", "yes"),
             mode="realtime",
             function_calling="True",
-            voice=os.getenv("VOICE", "sage")
         )
     return client
