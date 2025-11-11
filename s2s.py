@@ -9,7 +9,7 @@ import datetime
 import subprocess
 import time
 import queue
-from functions import lights_control, run_os_command, print_message, print_stl, create_file, open_application
+from functions import lights_control, run_os_command, print_stl, create_file, open_application
 
 load_dotenv()  # carrega o .env
 
@@ -101,8 +101,6 @@ class SofIAClient:
         self.on_text_response = original_callback
         return answer
 
-    
-
     def on_message(self, ws, message):
         event = json.loads(message)
         event_type = event.get("type")
@@ -113,7 +111,7 @@ class SofIAClient:
 
             if not self.mute_mic:
                 self.mute_mic = True
-                print("DEBUG: Mutando microfone enquanto roda o áudio de resposta.")
+                #print("DEBUG: Mutando microfone enquanto roda o áudio de resposta.")
             audio_chunk = event.get("delta")
             if audio_chunk and self.output_stream:
                 audio_data = base64.b64decode(audio_chunk)
@@ -122,8 +120,8 @@ class SofIAClient:
         elif event_type == "response.audio.done":
             print(event)
             def delayed_unmute():
-                time.sleep(1)  # Pequeno atraso para garantir que o áudio terminou
-                print("DEBUG: Desmutando o microfone pós áudio.")
+                time.sleep(0.5)  # Pequeno atraso para garantir que o áudio terminou
+                #print("DEBUG: Desmutando o microfone pós áudio.")
                 self.mute_mic = False
             threading.Thread(target=delayed_unmute, daemon=True).start()
         
@@ -135,11 +133,11 @@ class SofIAClient:
         
         elif event_type == "response.content_part.done":
             part = event.get("part", {})
-            print(f"DEBUG: response.content_part.done com parte: {part}")
+            #print(f"DEBUG: response.content_part.done com parte: {part}")
             if part.get("type") == "text":
                 final_text = part.get("text", "")
                 if final_text and self.on_text_response:
-                    print(f"DEBUG: Enviando texto final de response.content_part.done: {final_text}")
+                    #print(f"DEBUG: Enviando texto final de response.content_part.done: {final_text}")
                     self.on_text_response(final_text)
         
         elif event_type == "response.done":
@@ -185,24 +183,9 @@ class SofIAClient:
                                 }
                             }
                             self.ws.send(json.dumps(output_event))
-                            response_create_event = {"type": "response.create"}
-                            self.ws.send(json.dumps(response_create_event))
-                    # Gerencia execução de comandos de impressão
-                    elif func_name == "print":
-                        message_to_print = args.get("message")
-                        if message_to_print:
-                            result = print_message(message_to_print)
-                            output_event = {
-                                "type": "conversation.item.create",
-                                "item": {
-                                    "type": "function_call_output",
-                                    "call_id": call_id,
-                                    "output": json.dumps({"result": result})
-                                }
-                            }
-                            self.ws.send(json.dumps(output_event))
-                            response_create_event = {"type": "response.create"}
-                            self.ws.send(json.dumps(response_create_event))
+
+                            """ response_create_event = {"type": "response.create"}
+                            self.ws.send(json.dumps(response_create_event)) """                 
                     # Gerencia execução de comandos de impressão 3D
                     elif func_name == "print_stl":
                         stl_file = args.get("stl_file")
@@ -295,13 +278,21 @@ class SofIAClient:
             "session": {
                 "voice": "sage",
                 "output_audio_format": "pcm16",
-                "instructions": "Você é SofIA — sarcástica, prestativa, e inteligente. Regras rígidas:\
+                "instructions": "Você é SofIA — sarcástica, extremamente educada, formal e inteligente. Regras rígidas:\
                                 1) Para qualquer ação do usuário, primeiro verifique se é possível/plausível e faça UMA única function_call apropriada e pare (sem gerar texto). Não chame funções sem necessidade, apenas controle o que você for explicitamente solicitada a controlar.\
-                                2) Aguarde o resultado da função (function_call_output). Só então responda com poucas palavras + formalidade. É essencial que você seja formal, mas ainda assim leve, natural e engraçada. Não responda como um robô. ex.: ao invés de dizer 'Luz Apagada', diga 'Feito', ou 'tudo bem' ou 'pronto' ou coisa assim.\
+                                2) Aguarde o resultado da função (function_call_output). Só então responda com poucas palavras + formalidade. Evite respostas muito monótonas ou robotizadas, responda de forma natural e educada, por exemplo, se for um pedido simples, 'tudo bem' ou 'feito'. Também adicione sempre um sujeito de autoridade (chefe, senhor ou afins).\
                                 3) Não adivinhe dispositivos se estiver ambíguo. Por padrão, caso não haja especificação, use a luz do Quarto.\
-                                4) Não repita ações nem gere várias chamadas para a mesma intenção.\
+                                4) Caso seja uma função para acender/apagar luzes, responda e depois finalize o chat com sua função dedicada para tal.\
                                 5) Fale em PT-BR por padrão. Não comece diálogos desnecessários.\
-                                É isso, SofIA. Lembre-se de ser formal como uma princesa, mas servente como um mordomo. Sempre que ouvir um 'obrigado' ou 'valeu', corresponda e finalize a conversa com sua função adequada. Não apague ou acenda luzes diretamente uma depois da outra."            }
+                                6) Mantenha sempre um tom calmo.\
+                                Suas capacidades atuais:\
+                                1- Controle de dispositivos inteligentes (ex: luzes, termostatos)\
+                                2- Execução de comandos no sistema operacional\
+                                3- Impressão de arquivos STL\
+                                4- Respostas a perguntas gerais\
+                                5- Interação com APIs externas\
+                                6- Aprendizado contínuo com base nas interações",         
+            }
         }
         # Adiciona ferramentas de chamada de função se ativadas.
         if self.function_calling:
@@ -309,44 +300,29 @@ class SofIAClient:
                 {
                     "type": "function",
                     "name": "run_os_command",
-                    "description": f"Execute an OS system command on the {self.device}. For example: #open -a 'Google Chrome'",
+                    "description": "Executa um comando do sistema operacional no dispositivo. Exemplo: #open -a 'Google Chrome'",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "command": {
-                                "type": "string",
-                                "description": "The OS system command to execute."
-                            }
+                        "command": {
+                            "type": "string",
+                            "description": "O comando do sistema operacional a ser executado."
+                        }
                         },
                         "required": ["command"]
                     }
                 },
                 {
                     "type": "function",
-                    "name": "print",
-                    "description": "Print a message in the terminal.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "message": {
-                                "type": "string",
-                                "description": "The message to print in the terminal."
-                            }
-                        },
-                        "required": ["message"]
-                    }
-                },
-                {
-                    "type": "function",
                     "name": "print_stl",
-                    "description": "Open an STL file and follow a sequence of clicks to print it.",
+                    "description": "Abre um arquivo STL e segue uma sequência de cliques para imprimi-lo.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "stl_file": {
-                                "type": "string",
-                                "description": "The path to the STL file to print."
-                            }
+                        "stl_file": {
+                            "type": "string",
+                            "description": "O caminho para o arquivo STL a ser impresso."
+                        }
                         },
                         "required": ["stl_file"]
                     }
@@ -354,18 +330,18 @@ class SofIAClient:
                 {
                     "type": "function",
                     "name": "create_file",
-                    "description": "Create a file with the given content.",
+                    "description": "Cria um arquivo com o conteúdo fornecido.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "file_path": {
-                                "type": "string",
-                                "description": "The path where the file should be created."
-                            },
-                            "content": {
-                                "type": "string",
-                                "description": "The content to write to the file."
-                            }
+                        "file_path": {
+                            "type": "string",
+                            "description": "O caminho onde o arquivo deve ser criado."
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": "O conteúdo a ser escrito no arquivo."
+                        }
                         },
                         "required": ["file_path", "content"]
                     }
@@ -373,14 +349,14 @@ class SofIAClient:
                 {
                     "type": "function",
                     "name": "lights_control",
-                    "description": "Turns on/off lights and some other devices. Should be used whenever user asks for a light to be turned on/off. If user just says to turn on/off the lights, default is LuzQuartoOn, LuzSala will only be used when specified.",
+                    "description": "Liga/desliga luzes e outros dispositivos. Deve ser usada sempre que o usuário pedir para ligar/desligar luzes.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "routine": {
-                                "type": "string",
-                                "description": f"The routine name to trigger. Options: {', '.join(alexa_routines)}. (if user just says to turn on/off the lights, default is LuzQuartoOn, LuzSala will only be used when specified.)"
-                            }
+                        "routine": {
+                            "type": "string",
+                            "description": "O nome da rotina a ser acionada. Opções: LuzQuartoOn, LuzQuartoOff, LuzSalaOn, LuzSalaOff. (Se o usuário apenas disser para ligar/desligar as luzes, o padrão é LuzQuartoOn; LuzSala só será usada quando especificado.)"
+                        }
                         },
                         "required": ["routine"]
                     }
@@ -388,14 +364,14 @@ class SofIAClient:
                 {
                     "type": "function",
                     "name": "open_application",
-                    "description": "Find and open an application by name.",
+                    "description": "Encontra e abre um aplicativo pelo nome.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "app_name": {
-                                "type": "string",
-                                "description": "The name of the application to open."
-                            }
+                        "app_name": {
+                            "type": "string",
+                            "description": "O nome do aplicativo a ser aberto."
+                        }
                         },
                         "required": ["app_name"]
                     }
@@ -403,7 +379,7 @@ class SofIAClient:
                 {
                     "type": "function",
                     "name": "stop_chat",
-                    "description": "Stop the chat session. Breaks the flux and ends the conversation whenever no input is given or user intends to end saying: 'thanks', 'that's all' or such. Every time you understand your help is not needed (when you say goodbye in any way, shape or form), you must use this function."
+                    "description": "Encerra a sessão de chat após o entendimento de fim. Exemplo: Usuário diz: 'obrigado' ou 'só isso' - encerra a sessão. Deve ser sempre usada após a resposta de uma chamada de controle de luzes."
                 }
             ]
             session_update["session"]["tool_choice"] = "auto"
@@ -451,6 +427,8 @@ class SofIAClient:
         self.ws.on_open = self.on_open
         self.ws_thread = threading.Thread(target=self.ws.run_forever, daemon=True)
         self.ws_thread.start()
+        time.sleep(0.7) 
+        self.start_timed_context()
 
     def stop_realtime(self):
         print("DEBUG: Parando a conexão WebSocket e o áudio.")
@@ -460,3 +438,36 @@ class SofIAClient:
             self.ws_thread.join()
             self.ws = None
             self.ws_thread = None
+
+    def add_datetime_context(self, include_date=True, include_time=True):
+        self.include_date = include_date
+        self.include_time = include_time
+
+        if include_date or include_time:
+            now = datetime.datetime.now()
+            parts = []
+            if include_date:
+                parts.append(now.strftime('%Y-%m-%d'))
+            if include_time:
+                parts.append(now.strftime('%H:%M:%S'))
+            context_str = ' '.join(parts)
+            context_text = f"Contexto temporal: {context_str}"
+            context_event = {
+                "type": "conversation.item.create",
+                "item": {
+                    "type": "message",
+                    "role": "system",
+                    "content": [
+                        {"type": "input_text", "text": context_text}
+                    ]
+                }
+            }
+            if self.ws:
+                self.ws.send(json.dumps(context_event))
+
+    def start_timed_context(self, interval_minutes=10):
+        def update_context():
+            while self.running:
+                self.add_datetime_context(self.include_date, self.include_time)
+                time.sleep(interval_minutes * 60)
+        threading.Thread(target=update_context, daemon=True).start()

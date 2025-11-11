@@ -41,8 +41,8 @@ def lights_control(routine: str):
     global _last_lights_control_time
     now = time.time()
     if now - _last_lights_control_time < 2:
-        return
-    
+        return "Aguarde um pouco."
+
     _last_lights_control_time = now
     routine_mapping = {
         "LuzQuartoOn": ("quarto", True),
@@ -69,7 +69,7 @@ def lights_control(routine: str):
         if "data" in response.json():
             event_id = response.json()["data"][0].get("id")
             if event_id.startswith("SUCCESS"):
-                return
+                return "Sucesso"
             else:
                 return f"Falha ao ativar a rotina '{routine}': {event_id}"
 
@@ -102,13 +102,6 @@ def run_os_command(command: str) -> str:
         return result.stdout.strip() if result.stdout.strip() else result.stderr.strip()
     except Exception as e:
         return str(e)
-
-def print_message(message: str) -> str:
-    """
-    Print a message in the terminal and return an acknowledgement.
-    """
-    print(f"SofIA Print: {message}")
-    return f"Printed: {message}"
 
 def print_stl(stl_file: str, pc_username: str = None) -> str:
     """

@@ -37,9 +37,7 @@ def listen_for_wake_word():
             if result >= 0:  # Wake word detectada
                 print("🚀 Wake word detectada: Sofia")
                 sofia_client.start_realtime()
-                time.sleep(0.5)
-
-                timeout = time.time() + 30
+                timeout = time.time() + 20
                 
                 while True:
                     if (time.time() > timeout and not sofia_client.mute_mic):
@@ -48,11 +46,11 @@ def listen_for_wake_word():
                         break
 
                     if (not sofia_client.running):
-                        print("⏳ Finalizado. Voltando a ouvir a palavra de ativação...")
+                        print("❌ Finalizado. Voltando a ouvir a palavra de ativação...")
                         break
 
                     if sofia_client.mute_mic:
-                        timeout = time.time() + 30
+                        timeout = time.time() + 20
 
     except KeyboardInterrupt:
         print("\nListener finalizado pelo usuário")
